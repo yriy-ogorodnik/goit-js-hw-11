@@ -5,28 +5,42 @@ import SimpleLightbox from 'simplelightbox';
 // Додатковий імпорт стилів
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import NewsApiServece from './js/news-service';
+import LoadMoreBtn from './js/load-more-btn';
 
 let gallerySimpleLightbox = new SimpleLightbox('.gallery a');
 
 const refs = {
   searchForm: document.querySelector('.search-form'),
   articlesContainer: document.querySelector('.gallery'),
-  loadMoreBtn: document.querySelector('.load-more'),
+  // loadMoreBtn: document.querySelector('.load-more'),
 };
+const loadMoreBtn = new LoadMoreBtn({
+  selector: '.load-more',
+  hidden: true,
+});
 
 const newsApiServece = new NewsApiServece();
 
 refs.searchForm.addEventListener('submit', onSearch);
-refs.loadMoreBtn.addEventListener('click', onLoadMore);
+loadMoreBtn.refs.button.addEventListener('click', onLoadMore);
 
 function onSearch(e) {
   e.preventDefault();
-  newsApiServece.searchQuery = e.currentTarget.elements.searchQuery.value;
+  newsApiServece.query = e.currentTarget.elements.searchQuery.value;
+
+  if (newsApiServece.searchQuery === '') {
+    return Notiflix.Notify.failure(
+      'The search string cannot be empty. Please specify your search query.'
+    );
+  }
+
   newsApiServece.resetPage();
 
   newsApiServece
     .fetchArticles()
     .then(hits => {
+      clearArticlesContainer();
+      loadMoreBtn.show();
       return hits.reduce(
         (markup, article) => articlesTpl(article) + markup,
         ''
@@ -34,12 +48,12 @@ function onSearch(e) {
     })
     .then(hits => {
       appendArticlesMarkup(hits);
-      console.log('new', hits);
       gallerySimpleLightbox.refresh(hits);
     });
 }
-
+// ________________________LoadMore__________________
 function onLoadMore() {
+  loadMoreBtn.disable();
   newsApiServece
     .fetchArticles()
     .then(hits => {
@@ -51,11 +65,17 @@ function onLoadMore() {
     .then(hits => {
       appendArticlesMarkup(hits);
       gallerySimpleLightbox.refresh(hits);
+      loadMoreBtn.enable();
     });
 }
 
+// ________________________LoadMore__________________
+
 function appendArticlesMarkup(a) {
   refs.articlesContainer.insertAdjacentHTML('beforeend', a);
+}
+function clearArticlesContainer() {
+  refs.articlesContainer.innerHTML = '';
 }
 
 function articlesTpl({
