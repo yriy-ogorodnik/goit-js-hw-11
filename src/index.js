@@ -1,4 +1,3 @@
-import axios from 'axios';
 import Notiflix from 'notiflix';
 // Описаний в документації
 import SimpleLightbox from 'simplelightbox';
@@ -26,7 +25,7 @@ loadMoreBtn.refs.button.addEventListener('click', onLoadMore);
 
 function onSearch(e) {
   e.preventDefault();
-  newsApiServece.query = e.currentTarget.elements.searchQuery.value;
+  newsApiServece.query = e.currentTarget.elements.searchQuery.value.trim();
 
   if (newsApiServece.searchQuery === '') {
     return Notiflix.Notify.failure(
@@ -40,15 +39,22 @@ function onSearch(e) {
     .fetchArticles()
     .then(hits => {
       clearArticlesContainer();
-      loadMoreBtn.show();
+
       return hits.reduce(
         (markup, article) => articlesTpl(article) + markup,
         ''
       );
     })
     .then(hits => {
-      appendArticlesMarkup(hits);
-      gallerySimpleLightbox.refresh(hits);
+      if (hits.length === 0) {
+        return Notiflix.Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      } else {
+        loadMoreBtn.show();
+        appendArticlesMarkup(hits);
+        gallerySimpleLightbox.refresh(hits);
+      }
     });
 }
 // ________________________LoadMore__________________
